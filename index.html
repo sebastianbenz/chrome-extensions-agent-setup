@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workshop Setup Guide — AI + Chrome Extensions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Google+Sans+Display:wght@400;500&family=Google+Sans+Text:wght@400&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Design tokens ── */
+    :root {
+      /* Backgrounds — io.google/2026 neutral grey */
+      --bg:              #131314;
+      --surface:         #202124;
+      --surface-raised:  #2a2b2e;
+      --code-bg:         #191a1c;
+
+      /* Borders */
+      --border:          #3c3f43;
+      --border-subtle:   #2d2f33;
+
+      /* Text */
+      --ink:             #e8eaed;
+      --ink-2:           #9aa0a6;
+      --ink-3:           #606368;
+
+      /* Google Blue — #1a73e8 / #4285f4 */
+      --blue:            #1a73e8;
+      --blue-bright:     #4285f4;
+      --blue-dim:        #1a2a3a;
+      --blue-border:     rgba(66, 133, 244, 0.35);
+
+      /* Google Green — #34a853 */
+      --green:           #34a853;
+      --green-bright:    #57bb76;
+      --green-dim:       #182e20;
+      --green-border:    rgba(52, 168, 83, 0.35);
+
+      /* Google Yellow — #fbbc04 */
+      --yellow:          #fbbc04;
+      --yellow-dim:      #2e2200;
+
+      /* Google Red — #ea4335 */
+      --red:             #ea4335;
+
+      --radius:    14px;
+      --radius-sm:  8px;
+      --radius-xs:  5px;
+
+      --shadow:    0 1px 3px oklch(0% 0 0 / 0.45), 0 1px 2px oklch(0% 0 0 / 0.3);
+      --shadow-md: 0 4px 18px oklch(0% 0 0 / 0.55), 0 2px 6px oklch(0% 0 0 / 0.3);
+    }
+
+    /* ── Base ── */
+    body {
+      font-family: 'Google Sans Text', 'Google Sans', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .site-header {
+      background: var(--bg);
+      padding: 56px 24px 60px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Ambient glow blobs */
+    .site-header::before,
+    .site-header::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(90px);
+    }
+    .site-header::before {
+      width: 360px; height: 360px;
+      background: var(--blue);
+      opacity: 0.08;
+      top: -130px; left: -80px;
+    }
+    .site-header::after {
+      width: 300px; height: 300px;
+      background: var(--green);
+      opacity: 0.07;
+      top: -100px; right: -60px;
+    }
+
+    .header-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .chrome-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .chrome-mark span {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      display: block;
+    }
+    .chrome-mark span:nth-child(1) { background: var(--red); }
+    .chrome-mark span:nth-child(2) { background: var(--yellow); }
+    .chrome-mark span:nth-child(3) { background: var(--green); }
+    .chrome-mark span:nth-child(4) { background: var(--blue); }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-3);
+      letter-spacing: 0.02em;
+      margin-bottom: 22px;
+    }
+
+    .site-header h1 {
+      font-family: 'Google Sans Display', 'Google Sans', system-ui, sans-serif;
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      font-weight: 500;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      margin-bottom: 16px;
+      text-wrap: balance;
+    }
+
+    .site-header h1 em {
+      font-style: normal;
+      color: var(--blue-bright);
+    }
+
+    .site-header p {
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--ink-2);
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.55;
+    }
+
+    /* ── Main layout ── */
+    main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* ── Agent selector ── */
+    .selector-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    #agent-antigravity, #agent-claude, #agent-other {
+      position: absolute;
+      opacity: 0;
+      width: 0; height: 0;
+      pointer-events: none;
+    }
+
+    .selector-row {
+      display: flex;
+      gap: 0;
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 36px;
+    }
+
+    .agent-tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: calc(var(--radius) - 2px);
+      cursor: pointer;
+      transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink-2);
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .agent-tab:hover {
+      color: var(--ink);
+      background: var(--surface-raised);
+    }
+
+    .agent-tab .tab-icon {
+      width: 20px; height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    :has(#agent-antigravity:checked) .tab-antigravity,
+    :has(#agent-claude:checked)      .tab-claude,
+    :has(#agent-other:checked)       .tab-other {
+      background: var(--surface-raised);
+      color: var(--ink);
+    }
+
+    :has(#agent-antigravity:checked) .tab-antigravity {
+      box-shadow: inset 0 0 0 1.5px var(--blue-border);
+    }
+    :has(#agent-claude:checked) .tab-claude {
+      box-shadow: inset 0 0 0 1.5px rgba(234, 67, 53, 0.45);
+    }
+    :has(#agent-other:checked) .tab-other {
+      box-shadow: inset 0 0 0 1.5px var(--border);
+    }
+
+    /* ── Panel show / hide ── */
+    .setup-panel { display: none; }
+
+    :has(#agent-antigravity:checked) #panel-antigravity { display: block; animation: panelIn 0.22s ease-out; }
+    :has(#agent-claude:checked)      #panel-claude      { display: block; animation: panelIn 0.22s ease-out; }
+    :has(#agent-other:checked)       #panel-other       { display: block; animation: panelIn 0.22s ease-out; }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .setup-panel { animation: none !important; }
+    }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; gap: 20px; }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .step:hover {
+      border-color: var(--border);
+      box-shadow: var(--shadow-md);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .step-number {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--blue-dim);
+      border: 1.5px solid var(--blue-border);
+      color: var(--blue-bright);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-title {
+      font-size: 15.5px;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.3;
+    }
+
+    .step-subtitle {
+      font-size: 12.5px;
+      color: var(--ink-2);
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
+    .step-body { padding: 22px; }
+
+    /* ── Substeps ── */
+    .substeps {
+      list-style: none;
+      counter-reset: substep;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .substeps li {
+      counter-increment: substep;
+      display: flex;
+      gap: 12px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--ink-2);
+    }
+
+    .substeps li::before {
+      content: counter(substep);
+      flex-shrink: 0;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      color: var(--ink-3);
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+
+    /* ── Code blocks ── */
+    .code-block {
+      position: relative;
+      background: var(--code-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .code-block .code-lang {
+      position: absolute;
+      top: 9px;
+      left: 14px;
+      font-size: 10px;
+      font-family: 'Google Sans', system-ui, sans-serif;
+      font-weight: 500;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+
+    .code-block pre {
+      padding: 32px 52px 16px 16px;
+      font-family: 'Roboto Mono', 'Consolas', ui-monospace, monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #bdc1c6;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 7px;
+      right: 8px;
+      padding: 3px 10px;
+      background: var(--surface-raised);
+      color: var(--ink-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      font-size: 11px;
+      font-family: 'Google Sans', system-ui, sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .copy-btn:hover {
+      background: var(--border);
+      color: var(--ink);
+    }
+
+    .copy-btn.copied {
+      background: var(--green-dim);
+      color: var(--green-bright);
+      border-color: var(--green-border);
+    }
+
+    .code-block pre .hl {
+      color: var(--yellow);
+      font-weight: 600;
+    }
+
+    .code-block .code-title {
+      display: block;
+      padding: 9px 60px 8px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-2);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    /* ── Note / Tip boxes — no side-stripe ── */
+    .note {
+      display: flex;
+      gap: 10px;
+      padding: 12px 14px;
+      background: var(--blue-dim);
+      border: 1px solid var(--blue-border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--ink-2);
+      margin: 12px 0;
+      line-height: 1.5;
+    }
+
+    .tip {
+      display: flex;
+      gap: 10px;
+      padding: 12px 14px;
+      background: var(--green-dim);
+      border: 1px solid var(--green-border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--ink-2);
+      margin: 12px 0;
+      line-height: 1.5;
+    }
+
+    .note-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+
+    /* ── Pack chips ── */
+    .packs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+
+    .pack {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-2);
+    }
+
+    .pack .check {
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: var(--green-dim);
+      border: 1px solid var(--green-border);
+      color: var(--green);
+      font-size: 9px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Path / URL chips ── */
+    .file-path {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 7px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      font-family: 'Roboto Mono', 'Consolas', ui-monospace, monospace;
+      font-size: 12px;
+      color: var(--ink-2);
+    }
+
+    .nav-path {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      margin: 4px 0;
+      flex-wrap: wrap;
+    }
+
+    .nav-path .nav-sep { color: var(--ink-3); }
+    .nav-path .nav-item { color: var(--blue-bright); }
+
+    .chrome-url {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: var(--surface-raised);
+      border-radius: 20px;
+      font-family: 'Roboto Mono', 'Consolas', ui-monospace, monospace;
+      font-size: 13px;
+      color: var(--ink-2);
+      border: 1px solid var(--border);
+    }
+
+    .copy-url-btn {
+      padding: 1px 7px;
+      background: transparent;
+      color: var(--ink-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      font-size: 11px;
+      font-family: 'Google Sans', system-ui, sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .copy-url-btn:hover {
+      background: var(--border);
+      color: var(--ink);
+    }
+
+    .copy-url-btn.copied {
+      background: var(--green-dim);
+      color: var(--green-bright);
+      border-color: var(--green-border);
+    }
+
+    /* ── Verify block ── */
+    .verify-block {
+      background: var(--green-dim);
+      border: 1px solid var(--green-border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-top: 18px;
+      font-size: 13px;
+      color: var(--ink-2);
+    }
+
+    .verify-block .verify-title {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--green);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Divider ── */
+    .step-divider {
+      border: none;
+      border-top: 1px solid var(--border-subtle);
+      margin: 20px 0;
+    }
+
+    /* ── Typography ── */
+    p + p { margin-top: 8px; }
+    p, li { font-size: 14px; color: var(--ink-2); }
+    strong { color: var(--ink); font-weight: 600; }
+
+    code {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: 'Roboto Mono', 'Consolas', ui-monospace, monospace;
+      font-size: 12px;
+      color: var(--blue-bright);
+    }
+
+    a { color: var(--blue-bright); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    details summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--ink-2);
+      font-size: 13px;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    details summary::-webkit-details-marker { display: none; }
+
+    details summary::before {
+      content: '▸';
+      font-size: 10px;
+      color: var(--ink-3);
+      transition: transform 0.18s ease;
+      display: inline-block;
+    }
+
+    details[open] summary::before { transform: rotate(90deg); }
+
+    details > div { margin-top: 14px; }
+
+    /* ── Screenshots ── */
+    .screenshot-frame {
+      margin: 16px 0;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      background: #f8f9fa;
+    }
+
+    .screenshot-frame img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .screenshot-frame figcaption {
+      padding: 7px 12px;
+      font-size: 11.5px;
+      color: var(--ink-3);
+      background: #232427;
+      border-top: 1px solid var(--border-subtle);
+      text-align: center;
+      letter-spacing: 0.01em;
+    }
+
+    .screenshot-centered img {
+      display: block;
+      margin: 0 auto;
+      max-width: 420px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 520px) {
+      .agent-tab { font-size: 13px; padding: 10px 8px; gap: 6px; }
+      .agent-tab .tab-icon { display: none; }
+      main { padding: 24px 16px 60px; }
+      .site-header { padding: 40px 20px 44px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <h1>AI Coding Agents +<br><em>Chrome Extensions</em></h1>
+    <p>Set up Modern Web Guidance and Chrome DevTools for Agents with your coding agent. Read the <a href="https://developer.chrome.com/docs/extensions/ai/build-with-ai">full guide</a> for all details.</p>
+  </div>
+</header>
+
+<main>
+
+  <p class="selector-label">Choose your coding agent</p>
+
+  <!-- Hidden radio inputs -->
+  <input type="radio" name="agent" id="agent-antigravity" value="antigravity" checked>
+  <input type="radio" name="agent" id="agent-claude" value="claude">
+  <input type="radio" name="agent" id="agent-other" value="other">
+
+  <!-- Tab selector -->
+  <div class="selector-row" role="radiogroup" aria-label="Choose your coding agent">
+    <label class="agent-tab tab-antigravity" for="agent-antigravity">
+      <div class="tab-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
+          <path d="M16 4L28 10V22L16 28L4 22V10L16 4Z" fill="#1a73e8" opacity=".9"/>
+          <path d="M16 10L22 13V19L16 22L10 19V13L16 10Z" fill="white" opacity=".6"/>
+        </svg>
+      </div>
+      Antigravity
+    </label>
+
+    <label class="agent-tab tab-claude" for="agent-claude">
+      <div class="tab-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="11" fill="#ea4335" opacity=".18"/>
+          <text x="16" y="21.5" font-size="14" text-anchor="middle" fill="#ea4335" font-family="Georgia,serif" font-weight="bold">C</text>
+        </svg>
+      </div>
+      Claude Code
+    </label>
+
+    <label class="agent-tab tab-other" for="agent-other">
+      <div class="tab-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#5f6368">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+        </svg>
+      </div>
+      Other
+    </label>
+  </div>
+
+
+  <!-- ════════════════════════════════════
+       PANEL: ANTIGRAVITY
+  ═════════════════════════════════════ -->
+  <div class="setup-panel" id="panel-antigravity">
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <div>
+            <div class="step-title">Enable Modern Web Guidance &amp; Chrome DevTools</div>
+            <div class="step-subtitle">Both plugins live in the Build with Google setup screen</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>When you first launch Antigravity, the <strong>Build with Google</strong> screen appears. Enable both:</p>
+          <div class="packs" style="margin-bottom:16px; margin-top:10px">
+            <div class="pack"><div class="check">✓</div> Modern Web Guidance</div>
+            <div class="pack"><div class="check">✓</div> Chrome DevTools</div>
+          </div>
+          <figure class="screenshot-frame screenshot-centered">
+            <img src="img/antigravity-build-with-google.png"
+                 alt="Antigravity's Build with Google setup screen with checkboxes for Android, Modern Web Guidance, Google Antigravity SDK, Science, Firebase, and Chrome DevTools"
+                 width="560" height="626">
+            <figcaption>Build with Google — first-run setup wizard</figcaption>
+          </figure>
+          <details style="margin-top:14px">
+            <summary>Already past the setup wizard?</summary>
+            <div>
+              <p style="margin-bottom:10px">Go to <strong>Settings → Customizations → Build With Google Plugins</strong> and click <strong>Customize</strong>.</p>
+              <figure class="screenshot-frame">
+                <img src="img/antigravity-customizations.png"
+                     alt="Antigravity Settings panel showing Customizations page with the Build With Google Plugins section and a Customize button"
+                     width="1009" height="619">
+                <figcaption>Settings → Customizations → Build With Google Plugins → Customize</figcaption>
+              </figure>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <div>
+            <div class="step-title">Configure Chrome DevTools for Agents</div>
+            <div class="step-subtitle">Let your agent install, test, and inspect Chrome extensions live</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <ol class="substeps">
+            <li>
+              <div>Add the MCP server. Navigate to:
+                <div style="margin-top:6px">
+                  <span class="nav-path">
+                    <span class="nav-item">Settings</span>
+                    <span class="nav-sep">›</span>
+                    <span class="nav-item">Customization</span>
+                    <span class="nav-sep">›</span>
+                    <span class="nav-item">Add MCP server</span>
+                  </span>
+                </div>
+                Search for <strong>Chrome DevTools</strong> and add it.
+              </div>
+            </li>
+            <li>
+              <div>Open the MCP configuration and add these two parameters:
+                <div class="code-block" style="margin-top:8px">
+                  <span class="code-lang">args</span>
+                  <pre>--categoryExtensions,
+--autoConnect</pre>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                  The resulting MCP configuration looks like this:
+                <div class="code-block" style="margin-top:8px">
+                  <pre style="padding-top:14px">{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        <span class="hl">"--categoryExtensions"</span>,
+        <span class="hl">"--autoConnect"</span>
+      ]
+    }
+  }
+}</pre>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+              </div>
+            </li>
+            <li>
+              <div>Open Chrome and go to:
+                <div style="margin-top:6px">
+                  <span class="chrome-url">chrome://inspect/#remote-debugging<button class="copy-url-btn" onclick="copyUrl(this)">Copy</button></span>
+                </div>
+                Enable <strong>Allow remote debugging for this browser instance</strong>.
+              </div>
+            </li>
+            <li>
+              <div>Restart Antigravity to apply all changes.</div>
+            </li>
+          </ol>
+
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <div>
+            <div class="step-title">Verify your setup</div>
+            <div class="step-subtitle">Confirm everything works end-to-end</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <div class="verify-block">
+            <div class="verify-title">✓ Try this prompt</div>
+            <div class="code-block" style="margin-top:8px">
+              <span class="code-lang">prompt</span>
+              <pre>Create a hello world Chrome extension. Test it using Chrome DevTools.</pre>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════
+       PANEL: CLAUDE CODE
+  ═════════════════════════════════════ -->
+  <div class="setup-panel" id="panel-claude">
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <div>
+            <div class="step-title">Install Modern Web Guidance</div>
+            <div class="step-subtitle">Add up-to-date web + Chrome Extensions best practices to your agent</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Run the interactive install wizard in your terminal:</p>
+          <div class="code-block">
+            <span class="code-lang">sh</span>
+            <pre>npx modern-web-guidance@latest install --choose</pre>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <p style="margin-top:14px">When prompted, select <strong>both</strong> skill packs:</p>
+          <div class="packs">
+            <div class="pack"><div class="check">✓</div> modern-web-guidance</div>
+            <div class="pack"><div class="check">✓</div> chrome-extensions</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <div>
+            <div class="step-title">Configure Chrome DevTools for Agents</div>
+            <div class="step-subtitle">Let your agent install, test, and inspect Chrome extensions live</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <ol class="substeps">
+            <li>
+              <div>Run this command in your terminal to register the MCP server with extension tools enabled:
+                <div class="code-block" style="margin-top:8px">
+                  <span class="code-lang">sh</span>
+                  <pre>claude mcp add chrome-devtools --scope project -- \
+  npx chrome-devtools-mcp@latest \
+  --categoryExtensions \
+  --autoConnect</pre>
+                  <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+              </div>
+            </li>
+            <li>
+              <div>Open Chrome and navigate to:
+                <div style="margin-top:6px">
+                  <span class="chrome-url">chrome://inspect/#remote-debugging<button class="copy-url-btn" onclick="copyUrl(this)">Copy</button></span>
+                </div>
+              </div>
+            </li>
+            <li>
+              <div>Enable <strong>Allow remote debugging for this browser instance</strong>.</div>
+            </li>
+          </ol>
+
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <div>
+            <div class="step-title">Verify your setup</div>
+            <div class="step-subtitle">Confirm everything works end-to-end</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <div class="verify-block">
+            <div class="verify-title">✓ Try this prompt</div>
+            Try this prompt in Claude Code to confirm everything works:
+            <div class="code-block" style="margin-top:8px">
+              <span class="code-lang">prompt</span>
+              <pre>Create a hello world Chrome extension. Test it using Chrome DevTools.</pre>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════
+       PANEL: OTHER
+  ═════════════════════════════════════ -->
+  <div class="setup-panel" id="panel-other">
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <div>
+            <div class="step-title">Install Modern Web Guidance</div>
+            <div class="step-subtitle">Add up-to-date web + Chrome Extensions best practices to your agent</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Run the interactive install wizard in your terminal:</p>
+          <div class="code-block">
+            <span class="code-lang">sh</span>
+            <pre>npx modern-web-guidance@latest install --choose</pre>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <p style="margin-top:14px">The wizard will detect your coding agent and configure it. When prompted, select <strong>both</strong> skill packs:</p>
+          <div class="packs">
+            <div class="pack"><div class="check">✓</div> modern-web-guidance</div>
+            <div class="pack"><div class="check">✓</div> chrome-extensions</div>
+          </div>
+
+          <hr class="step-divider">
+
+          <p style="margin-bottom:10px">Agent-specific alternatives:</p>
+          <div style="font-size:13px; display:flex; flex-direction:column; gap:12px; color:var(--ink-2)">
+            <div>
+              <strong>GitHub Copilot</strong>
+              <div class="code-block" style="margin-top:6px">
+                <pre>/plugin marketplace add GoogleChrome/modern-web-guidance
+/plugin install modern-web-guidance@googlechrome</pre>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+            </div>
+            <div>
+              <strong>Gemini CLI</strong>
+              <div class="code-block" style="margin-top:6px">
+                <pre>gemini skills install GoogleChrome/modern-web-guidance</pre>
+                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <div>
+            <div class="step-title">Configure Chrome DevTools for Agents</div>
+            <div class="step-subtitle">Let your agent install, test, and inspect Chrome extensions live</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <p>Add the following to your MCP configuration file. Copy the full JSON, then find the right file for your agent below:</p>
+          <div class="code-block">
+            <span class="code-lang">json</span>
+            <pre>{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--categoryExtensions",
+        "--autoConnect"
+      ]
+    }
+  }
+}</pre>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+
+          <div style="margin: 16px 0; display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--ink-2)">
+            <div style="display:flex; align-items:baseline; gap:10px;">
+              <strong style="min-width:130px; color:var(--ink)">Cursor</strong>
+              <span class="file-path">.cursor/mcp.json</span>
+            </div>
+            <div style="display:flex; align-items:baseline; gap:10px;">
+              <strong style="min-width:130px; color:var(--ink)">VS Code Copilot</strong>
+              <span class="file-path">.vscode/mcp.json</span>
+            </div>
+            <div style="display:flex; align-items:baseline; gap:10px;">
+              <strong style="min-width:130px; color:var(--ink)">Gemini CLI</strong>
+              <span class="file-path">~/.gemini/settings.json</span>
+              <span style="color:var(--ink-3); margin-left:4px">(add inside existing JSON)</span>
+            </div>
+            <div style="display:flex; align-items:baseline; gap:10px;">
+              <strong style="min-width:130px; color:var(--ink)">Generic / other</strong>
+              <span class="file-path">.mcp.json</span>
+              <span style="color:var(--ink-3); margin-left:4px">(project root)</span>
+            </div>
+          </div>
+
+          <hr class="step-divider">
+
+          <p style="margin-bottom:10px">Then enable remote debugging in Chrome:</p>
+          <ol class="substeps">
+            <li>
+              <div>Open Chrome and navigate to:
+                <div style="margin-top:6px">
+                  <span class="chrome-url">chrome://inspect/#remote-debugging<button class="copy-url-btn" onclick="copyUrl(this)">Copy</button></span>
+                </div>
+              </div>
+            </li>
+            <li>
+              <div>Enable <strong>Allow remote debugging for this browser instance</strong>.</div>
+            </li>
+            <li>
+              <div>When prompted by Chrome, click <strong>Approve</strong> to allow remote debugging.</div>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">3</div>
+          <div>
+            <div class="step-title">Verify your setup</div>
+            <div class="step-subtitle">Confirm everything works end-to-end</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <div class="verify-block">
+            <div class="verify-title">✓ Try this prompt</div>
+            Try this prompt to confirm everything works:
+            <div class="code-block" style="margin-top:8px">
+              <span class="code-lang">prompt</span>
+              <pre>Create a hello world Chrome extension. Test it using Chrome DevTools.</pre>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<script>
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.textContent.trim()).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  function copyUrl(btn) {
+    const span = btn.closest('.chrome-url');
+    const url = span.textContent.replace('Copy', '').replace('🔵', '').trim();
+    navigator.clipboard.writeText(url).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
